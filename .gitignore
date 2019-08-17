@@ -1,4 +1,9 @@
+# Custom ignored files
 csv_file/*.csv
+train/
+validation/
+test/
+*.zip
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
