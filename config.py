@@ -35,3 +35,10 @@ DEFAULT_READ_ROW = 10
 
 # 图库名称
 AWS_BUCKET_NAME = 'open-images-dataset'
+
+# 锚点的尺寸
+ANCHOR_SIZE = [128, 256, 512]
+
+# 锚点的比例
+ANCHOR_RATIOS = [0.5, 1, 2]
+
