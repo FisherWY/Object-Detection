@@ -6,12 +6,10 @@ import copy
 
 class load_data(object):
     def __init__(self,path,batch,CLASS):
-
-        self.devkil_path = path + '/VOCdevkit'
-        self.data_path = self.devkil_path + '/VOC2007'
+        self.data_path = path
         self.img_size = 448
         self.batch = batch
-        self.CLASS = CLASSES
+        self.CLASS = CLASS
         self.n_class = len(CLASS)
         self.class_id = dict(zip(CLASS, range(self.n_class)))
         self.id = 0
@@ -22,7 +20,7 @@ class load_data(object):
         im = cv2.imread(PATH)
         im = cv2.resize(im,(self.img_size,self.img_size))
         im = cv2.cvtColor(im,cv2.COLOR_BGR2RGB)
-        im = np.multiply(1./255.,im)
+        im = np.multiply(1./255.,im)     #归一化，彩色变灰色
         return im
 
 
@@ -30,10 +28,10 @@ class load_data(object):
         path = self.data_path + '/JPEGImages/' + index  + '.jpg'
         xml_path = self.data_path + '/Annotations/' + index + '.xml'
         img = cv2.imread(path)
-        w = self.img_size / img.shape[0]
+        w = self.img_size / img.shape[0]     #比例
         h = self.img_size / img.shape[1]
 
-        label = np.zeros((7,7,25))
+        label = np.zeros((7,7,25))           #7*7，25=20+5，20：类别，5：boxes的x，y，w，h，confidence
         tree = ET.parse(xml_path)
         objs = tree.findall('object')
         for i in objs:
@@ -97,22 +95,22 @@ class load_data(object):
 
 
 
-if __name__ == '__main__':
-    img = cv2.imread('../test/cat.jpg')
-    cv2.imshow('1',img)
-    img = img[:,::-1,:]
-
-    cv2.imshow('im',img)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
-    CLASSES = ['aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus',
-               'car', 'cat', 'chair', 'cow', 'diningtable', 'dog', 'horse',
-               'motorbike', 'person', 'pottedplant', 'sheep', 'sofa',
-               'train', 'tvmonitor']
-    data_path = '../data/pascal_voc'
-    test = load_data(data_path,10,CLASSES)
-    img, labels = test.get_data()
-    print(img.shape,labels.shape)
+# if __name__ == '__main__':
+#     # img = cv2.imread('../test/cat.jpg')
+#     # cv2.imshow('1',img)
+#     # img = img[:,::-1,:]
+#     #
+#     # cv2.imshow('im',img)
+#     # cv2.waitKey(0)
+#     # cv2.destroyAllWindows()
+#     CLASSES = ['aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus',
+#                'car', 'cat', 'chair', 'cow', 'diningtable', 'dog', 'horse',
+#                'motorbike', 'person', 'pottedplant', 'sheep', 'sofa',
+#                'train', 'tvmonitor']
+#     data_path = '../data/pascal_voc'
+#     test = load_data(data_path,10,CLASSES)
+#     img, labels = test.get_data()
+#     print(img.shape,labels.shape)
 
 
 

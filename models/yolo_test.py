@@ -1,14 +1,11 @@
 import numpy as np
 import tensorflow as tf
 import cv2
-
-
-
-
+import models.datas as da
 
 class Yolo(object):
 
-    def __init__(self):
+    def __init__(self, img, labels):
 
         self.classes = ["aeroplane", "bicycle", "bird", "boat", "bottle",
                         "bus", "car", "cat", "chair", "cow", "diningtable",
@@ -34,16 +31,19 @@ class Yolo(object):
         self.object_scale = 1.
         self.class_scale = 2.
 
+        self.labels = labels
+        self.img = img
 
 
 
+    #relu的改版
     def leak_relu(self,x, alpha=0.1):
         return tf.maximum(alpha * x, x)
 
 
 #################  网络部分
     def _build_net(self):
-
+        #vgg16
         x = tf.placeholder(tf.float32, [None, 448, 448, 3])
         with tf.variable_scope('yolo'):
             with tf.variable_scope('conv_2'):
@@ -363,9 +363,54 @@ class Yolo(object):
             0.0001, global_step, 30000,
             0.1, True, name='learning_rate')
         op = tf.train.GradientDescentOptimizer(learning_rate).minimize()
+        # op = tf.train.AdagradDAOptimizer(learning_rate).minimize()
 
 
-
+    # def train_model(self):
+    #     lr = tf.Variable(self.lr[0],trainable=False)
+    #     self.optimizer = tf.train.MomentumOptimizer(lr, cfg.momentum)
+    #     #self.optimizer = tf.train.GradientDescentOptimizer(lr)
+    #     self.loss = self.rpn_loss.add_loss() + self.predict_loss.add_loss()
+    #     train_op = self.optimizer.minimize(self.loss)
+    #     variables = tf.global_variables()
+    #     reader = pywrap_tensorflow.NewCheckpointReader(self.net.weight_file_path)
+    #     var_to_shape_map = reader.get_variable_to_shape_map()
+    #     variables_to_restore = self.get_var_list(variables, var_to_shape_map)
+    #     init = tf.global_variables_initializer()
+    #     saver = tf.train.Saver(var_list=variables_to_restore)
+    #     merged = tf.summary.merge_all()
+    #     with tf.Session() as sess:
+    #         train_writer = tf.summary.FileWriter(self.train_summary_dir, sess.graph)
+    #         val_writer = tf.summary.FileWriter(self.val_summary_dir)
+    #         sess.run(init)
+    #         saver.restore(sess, self.net.weight_file_path)
+    #         self.fix_variables(sess, self.net.weight_file_path)
+    #         saver = tf.train.Saver(variables,max_to_keep = 10)
+    #         for step in range(self.max_iter+1):
+    #             if step == self.lr_change_ITER:
+    #                 lr = tf.assign(lr, self.lr[1])
+    #             train_data = self.data.get()
+    #             image_height = np.array(train_data['image'].shape[1])
+    #             image_width = np.array(train_data['image'].shape[2])
+    #             feed_dict = {self.net.image: train_data['image'], self.net.image_width: image_width,\
+    #                          self.net.image_height: image_height, self.net.gt_boxes: train_data['box'],\
+    #                          self.net.gt_cls: train_data['cls']}
+    #             if step % self.summary_iter == 0:
+    #                 total_loss, summary, learning_rate= sess.run([self.loss, merged, lr], feed_dict=feed_dict)
+    #                 train_writer.add_summary(summary, step)
+    #                 val_data = self.val_data.get()
+    #                 val_image_height = np.array(val_data['image'].shape[1])
+    #                 val_image_width = np.array(val_data['image'].shape[2])
+    #                 val_feed_dict = {self.net.image: val_data['image'], self.net.image_width: val_image_width,\
+    #                                  self.net.image_height: val_image_height, self.net.gt_boxes: val_data['box'],\
+    #                                  self.net.gt_cls: val_data['cls']}
+    #                 val_loss, val_summary = sess.run([self.loss, merged], feed_dict=val_feed_dict)
+    #                 val_writer.add_summary(val_summary, step)
+    #                 print ('The', step, 'step train_total_loss is', total_loss, 'val_total_loss is', val_loss)
+    #                 print ('learning_rate is ', learning_rate)
+    #             if step % self.save_iter == 0:
+    #                 saver.save(sess, self.ckpt_filename, global_step = step)
+    #             sess.run(train_op, feed_dict=feed_dict)
 
 
 
@@ -377,7 +422,7 @@ if __name__ == '__main__':
     #
     # # checkpoint_path = '../Nn/ssd_vgg_300_weights.ckpt'
     # # checkpoint_path = '../NN/ssd_vgg_300_weights.ckpt'
-    # checkpoint_path = './model/faster_rcnn/VGGnet_fast_rcnn_iter_70000.ckpt'
+    # checkpoint_path = './models/faster_rcnn/VGGnet_fast_rcnn_iter_70000.ckpt'
     # # print(path.getcwdu())
     # # print(checkpoint_path)
     # # read data from checkpoint file
@@ -395,26 +440,32 @@ if __name__ == '__main__':
     # # print(data_print, data_print.shape, np.max(data_print), np.min(data_print), np.mean(data_print))
     # print(data_print)
 
-
-
-    yo = Yolo()
-
+    # 预读取数据
+    CLASSES = ['aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus',
+               'car', 'cat', 'chair', 'cow', 'diningtable', 'dog', 'horse',
+               'motorbike', 'person', 'pottedplant', 'sheep', 'sofa',
+               'train', 'tvmonitor']
+    data_path = '../VOCdevkit/VOC2007'
+    x = da.load_data(data_path, 10, CLASSES)
+    img,labels = x.get_data()
+    dataset = tf.data.Dataset.from_tensor_slices((img,labels))
+    yo = Yolo(img, labels)
     pred,x = yo._build_net()
+    yo.train_yolo()
     init = tf.global_variables_initializer()
     sess = tf.Session()
-    checkpoint_path = '../../model/yolo/YOLO_small.ckpt'
+    # checkpoint_path = '../../models/yolo/YOLO_small.ckpt'
     saver = tf.train.Saver()
     sess.run(init)
-    saver.restore(sess, checkpoint_path)
+    # saver.restore(sess, checkpoint_path)
 
-    img = cv2.imread('../../road.jpg')
-    img = yo._detect_from_image(img)
-
-    scores, boxes, box_classes = yo.filter(pred)
-    scores, boxes, box_classes = sess.run([scores, boxes, box_classes],feed_dict={x:img})
-    print(scores, boxes, box_classes)
-
-    yo.draw_rectangle(yo.img,box_classes,scores,boxes,[[0,0,255],[255,0,0]])
+    # img = cv2.imread('../test/road.jpg')
+    # img = yo._detect_from_image(img)
+    # scores, boxes, box_classes = yo.filter(pred)
+    # scores, boxes, box_classes = sess.run([scores, boxes, box_classes],feed_dict={x:img})
+    # print(scores, boxes, box_classes)
+    #
+    # yo.draw_rectangle(yo.img,box_classes,scores,boxes,[[0,0,255],[255,0,0]])
 
 
 

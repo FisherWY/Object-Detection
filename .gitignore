@@ -3,6 +3,7 @@ csv_file/*.csv
 train/
 validation/
 test/
+VOC2007/
 *.zip
 
 # Byte-compiled / optimized / DLL files

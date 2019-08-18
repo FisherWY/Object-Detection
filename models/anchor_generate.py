@@ -2,7 +2,7 @@
 
 import numpy as np
 import tensorflow as tf
-import model.config as cfg
+import models.config as cfg
 
 def generate_anchors(anchor_scales=[128,256,512], anchor_ratios=[0.5,1,2], anchor_bias_x_ctr=8, anchor_bias_y_ctr=8):
     anchor_width = np.array(anchor_scales)
